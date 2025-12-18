@@ -1,0 +1,18 @@
+services:
+  mariadb:
+    image: mariadb:10.11
+    container_name: erp-mariadb
+    restart: unless-stopped
+
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+
+    ports:
+      - "3306:3306"
+
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./docker-init:/docker-entrypoint-initdb.d:ro
+
+volumes:
+  db_data:
