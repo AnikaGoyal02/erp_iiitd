@@ -1,0 +1,110 @@
+CREATE DATABASE IF NOT EXISTS erpdb;
+USE erpdb;
+
+CREATE TABLE IF NOT EXISTS students (
+  student_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL UNIQUE,
+  roll_no VARCHAR(20) NOT NULL UNIQUE,
+  program VARCHAR(100) NOT NULL,
+  year INT UNSIGNED NOT NULL CHECK (year BETWEEN 1 AND 6),
+  email VARCHAR(100),
+  phone VARCHAR(15),
+  join_date DATE DEFAULT CURRENT_DATE,
+  graduation_year INT UNSIGNED DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS instructors (
+  instructor_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL UNIQUE,
+  department VARCHAR(100) NOT NULL,
+  designation VARCHAR(50) DEFAULT 'Assistant Professor',
+  email VARCHAR(100),
+  phone VARCHAR(15),
+  office VARCHAR(20),
+  joined_on DATE DEFAULT CURRENT_DATE
+);
+
+CREATE TABLE IF NOT EXISTS courses (
+  course_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(10) NOT NULL UNIQUE,
+  title VARCHAR(150) NOT NULL,
+  credits TINYINT UNSIGNED NOT NULL CHECK (credits > 0),
+  description TEXT,
+  is_active BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE IF NOT EXISTS sections (
+  section_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  course_id INT UNSIGNED NOT NULL,
+  instructor_id INT UNSIGNED NULL,
+  day_time VARCHAR(50) NOT NULL,
+  room VARCHAR(20),
+  capacity SMALLINT UNSIGNED NOT NULL CHECK (capacity >= 0),
+  semester ENUM('Summer','Winter','Monsoon') NOT NULL,
+  year INT UNSIGNED NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (course_id) REFERENCES courses(course_id) ON DELETE CASCADE,
+  FOREIGN KEY (instructor_id) REFERENCES instructors(instructor_id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS enrollments (
+  enrollment_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  student_id INT UNSIGNED NOT NULL,
+  section_id INT UNSIGNED NOT NULL,
+  status ENUM('ENROLLED','DROPPED','COMPLETED') DEFAULT 'ENROLLED',
+  registered_on DATETIME DEFAULT CURRENT_TIMESTAMP,
+  dropped_on DATETIME,
+  final_grade VARCHAR(4),
+  UNIQUE KEY unique_student_section (student_id, section_id),
+  FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
+  FOREIGN KEY (section_id) REFERENCES sections(section_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS grades (
+  grade_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  enrollment_id INT UNSIGNED NOT NULL,
+  component_type VARCHAR(50) NOT NULL,
+  component_name VARCHAR(100) NOT NULL,
+  score DECIMAL(7,2),
+  max_score DECIMAL(7,2),
+  weightage DECIMAL(6,2) DEFAULT 0.0,
+  remarks VARCHAR(255),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (enrollment_id) REFERENCES enrollments(enrollment_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS settings (
+  `key` VARCHAR(50) NOT NULL PRIMARY KEY,
+  `value` VARCHAR(100),
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  updated_by INT UNSIGNED NULL
+);
+
+
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    sender_user_id INT(10) UNSIGNED NOT NULL,
+
+    target_type ENUM('ALL','COURSE','SECTION',
+                     'ALL_STUDENTS','ALL_INSTRUCTORS') NOT NULL,
+
+    target_id INT(10) UNSIGNED NULL,
+
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_sender_user
+        FOREIGN KEY (sender_user_id)
+        REFERENCES authdb.users_auth(user_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+)
+ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;
+
